@@ -20,3 +20,17 @@ def calculer_promo10(montant: Decimal) -> Decimal:
         Decimal("0.01"),
         rounding=ROUND_HALF_UP,
     )
+
+
+def calculer_ttc(montant_ht: Decimal) -> Decimal:
+    """Calcule le montant TTC avec une TVA de 19 %."""
+    if montant_ht < Decimal("0.00"):
+        raise ValueError("Le montant HT doit être positif ou nul.")
+
+    taux_tva = Decimal("0.19")
+    montant_ttc = montant_ht * (Decimal("1.00") + taux_tva)
+
+    return montant_ttc.quantize(
+        Decimal("0.01"),
+        rounding=ROUND_HALF_UP,
+    )

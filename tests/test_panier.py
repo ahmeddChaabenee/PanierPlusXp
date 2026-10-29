@@ -2,7 +2,7 @@ from decimal import Decimal
 
 import pytest
 
-from panierplus.panier import calculer_promo10, calculer_sous_total
+from panierplus.panier import calculer_promo10, calculer_sous_total, calculer_ttc
 
 
 def test_module_panier_est_importable():
@@ -56,3 +56,23 @@ def test_promo10_ne_depasse_pas_le_montant_eligible():
     reduction = calculer_promo10(montant)
 
     assert reduction <= montant
+
+def test_calculer_ttc_avec_tva_19_pourcent():
+    montant_ht = Decimal("100.00")
+
+    assert calculer_ttc(montant_ht) == Decimal("119.00")
+
+def test_calculer_ttc_refuse_un_montant_negatif():
+    with pytest.raises(ValueError):
+        calculer_ttc(Decimal("-10.00"))
+
+
+
+def test_calculer_ttc_accepte_un_montant_nul():
+    assert calculer_ttc(Decimal("0.00")) == Decimal("0.00")
+
+
+def test_calculer_ttc_arrondit_a_deux_decimales():
+    montant_ht = Decimal("10.05")
+
+    assert calculer_ttc(montant_ht) == Decimal("11.96")
