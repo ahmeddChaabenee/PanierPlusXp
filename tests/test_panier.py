@@ -2,9 +2,7 @@ from decimal import Decimal
 
 import pytest
 
-from panierplus.panier import calculer_sous_total
-
-from panierplus.panier import calculer_sous_total, calculer_promo10
+from panierplus.panier import calculer_promo10, calculer_sous_total
 
 
 def test_module_panier_est_importable():
@@ -34,3 +32,27 @@ def test_promo10_applique_une_reduction_de_10_pourcent():
 
     assert calculer_promo10(montant) == Decimal("10.00")
 
+
+def test_promo10_refuse_un_montant_negatif():
+    with pytest.raises(ValueError):
+        calculer_promo10(Decimal("-10.00"))
+
+
+def test_promo10_arrondit_a_deux_decimales():
+    montant = Decimal("10.05")
+
+    assert calculer_promo10(montant) == Decimal("1.01")
+
+
+def test_promo10_accepte_un_montant_nul():
+    assert calculer_promo10(Decimal("0.00")) == Decimal("0.00")
+
+
+def test_promo10_sur_un_montant_inferieur_a_dix():
+    assert calculer_promo10(Decimal("5.00")) == Decimal("0.50")
+
+def test_promo10_ne_depasse_pas_le_montant_eligible():
+    montant = Decimal("5.00")
+    reduction = calculer_promo10(montant)
+
+    assert reduction <= montant
