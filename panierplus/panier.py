@@ -19,6 +19,7 @@ class Article:
     categorie: str
     prix_unitaire: float
     quantite: int = 1
+    eligible_offre: bool = False
 
     def __post_init__(self):
         if not self.nom.strip():
@@ -71,6 +72,7 @@ class Panier:
         self.code_promo = code if code == "PROMO10" else None
 
     def montant_reduction(self) -> float:
+        """Calculate the PROMO10 discount."""
         if self.code_promo != "PROMO10":
             return 0.0
 
@@ -81,6 +83,7 @@ class Panier:
         return float(reduction)
 
     def total_apres_reduction(self) -> float:
+        """Return the total after the PROMO10 discount."""
         total = montant(self.sous_total()) - montant(
             self.montant_reduction()
         )
@@ -125,6 +128,25 @@ class Panier:
         total_ht = montant(self.total_apres_reduction())
         tva = montant(self.montant_tva())
         return float(montant(total_ht + tva))
+
+    def montant_reduction_offre(self) -> float:
+        """Calculate the 3-for-1 discount for eligible products."""
+        prix_unites = []
+
+        for article in self.articles:
+            if article.eligible_offre:
+                prix = montant(article.prix_unitaire)
+                prix_unites.extend([prix] * article.quantite)
+
+        # Group units from most expensive to least expensive.
+        prix_unites.sort(reverse=True)
+
+        reduction = Decimal("0.00")
+
+        for index in range(3, len(prix_unites), 4):
+            reduction += prix_unites[index]
+
+        return float(montant(reduction))
 
 
 def calculer_sous_total(

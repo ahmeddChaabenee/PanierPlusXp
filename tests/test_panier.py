@@ -120,3 +120,59 @@ def test_tva_apres_promotion():
 
     assert panier.montant_tva() == 18.00
     assert panier.total_ttc() == 108.00
+
+
+
+def test_offre_3_pour_4_unites_eligibles():
+    panier = Panier()
+    panier.ajouter(
+        Article("Produit A", "STANDARD", 10.00, 4, True)
+    )
+
+    assert panier.montant_reduction_offre() == 10.00
+
+
+def test_offre_plusieurs_groupes():
+    panier = Panier()
+    panier.ajouter(
+        Article("Produit A", "STANDARD", 10.00, 8, True)
+    )
+
+    assert panier.montant_reduction_offre() == 20.00
+
+
+def test_offre_non_applicable_a_un_produit_non_eligible():
+    panier = Panier()
+    panier.ajouter(
+        Article("Produit A", "STANDARD", 10.00, 4)
+    )
+
+    assert panier.montant_reduction_offre() == 0.00
+
+
+def test_offre_prix_unitaire_le_plus_bas():
+    panier = Panier()
+    panier.ajouter(
+        Article("Produit A", "STANDARD", 5.00, 1, True)
+    )
+    panier.ajouter(
+        Article("Produit B", "STANDARD", 8.00, 1, True)
+    )
+    panier.ajouter(
+        Article("Produit C", "STANDARD", 12.00, 1, True)
+    )
+    panier.ajouter(
+        Article("Produit D", "STANDARD", 20.00, 1, True)
+    )
+
+    assert panier.montant_reduction_offre() == 5.00
+
+
+def test_offre_moins_de_quatre_unites():
+    panier = Panier()
+    panier.ajouter(
+        Article("Produit A", "STANDARD", 10.00, 3, True)
+    )
+
+    assert panier.montant_reduction_offre() == 0.00
+
