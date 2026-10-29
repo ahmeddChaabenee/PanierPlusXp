@@ -59,8 +59,7 @@ class Panier:
     def sous_total(self) -> float:
         total = sum(
             (
-                montant(article.prix_unitaire)
-                * article.quantite
+                montant(article.prix_unitaire) * article.quantite
                 for article in self.articles
             ),
             Decimal("0.00"),
@@ -75,16 +74,63 @@ class Panier:
         if self.code_promo != "PROMO10":
             return 0.0
 
-        reduction = montant(Decimal(str(self.sous_total())) * Decimal("0.10"))
+        reduction = montant(
+            Decimal(str(self.sous_total())) * Decimal("0.10")
+        )
         reduction = min(reduction, montant(self.sous_total()))
         return float(reduction)
 
     def total_apres_reduction(self) -> float:
-        total = montant(self.sous_total()) - montant(self.montant_reduction())
+        total = montant(self.sous_total()) - montant(
+            self.montant_reduction()
+        )
         return float(max(total, Decimal("0.00")))
 
+    def montant_tva(self) -> float:
+        """Calculate VAT on each product after promotion."""
+        taux_tva = {
+            "LIVRE": Decimal("0.055"),
+            "STANDARD": Decimal("0.20"),
+        }
 
-def calculer_sous_total(prix_unitaire: float, quantite: int) -> float:
+        total_tva = Decimal("0.00")
+
+        for article in self.articles:
+            taux = taux_tva.get(article.categorie.upper())
+
+            if taux is None:
+                raise ValueError(
+                    f"Catégorie inconnue : {article.categorie}"
+                )
+
+            montant_ligne = (
+                montant(article.prix_unitaire) * article.quantite
+            )
+
+            if self.code_promo == "PROMO10":
+                reduction_ligne = montant(
+                    montant_ligne * Decimal("0.10")
+                )
+                montant_ligne = max(
+                    montant_ligne - reduction_ligne,
+                    Decimal("0.00"),
+                )
+
+            total_tva += montant(montant_ligne * taux)
+
+        return float(montant(total_tva))
+
+    def total_ttc(self) -> float:
+        """Return the total including VAT after promotion."""
+        total_ht = montant(self.total_apres_reduction())
+        tva = montant(self.montant_tva())
+        return float(montant(total_ht + tva))
+
+
+def calculer_sous_total(
+    prix_unitaire: float,
+    quantite: int,
+) -> float:
     """Return the subtotal for one product."""
     if prix_unitaire < 0:
         raise ValueError("Le prix ne peut pas être négatif.")

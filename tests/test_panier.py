@@ -96,3 +96,27 @@ def test_total_apres_reduction_ne_peut_pas_etre_negatif():
     panier.appliquer_promotion("PROMO10")
 
     assert panier.total_apres_reduction() == 0.0
+
+def test_tva_livre():
+    panier = Panier()
+    panier.ajouter(Article("Livre Python", "LIVRE", 100.00))
+
+    assert panier.montant_tva() == 5.50
+    assert panier.total_ttc() == 105.50
+
+
+def test_tva_produit_standard():
+    panier = Panier()
+    panier.ajouter(Article("Clavier", "STANDARD", 100.00))
+
+    assert panier.montant_tva() == 20.00
+    assert panier.total_ttc() == 120.00
+
+
+def test_tva_apres_promotion():
+    panier = Panier()
+    panier.ajouter(Article("Clavier", "STANDARD", 100.00))
+    panier.appliquer_promotion("PROMO10")
+
+    assert panier.montant_tva() == 18.00
+    assert panier.total_ttc() == 108.00
