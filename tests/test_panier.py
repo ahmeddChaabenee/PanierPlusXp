@@ -7,6 +7,7 @@ from panierplus.panier import (
     calculer_promo_trois_achetes_un_gratuit,
     calculer_sous_total,
     calculer_ttc,
+    plafonner_reduction,
 )
 
 
@@ -123,3 +124,62 @@ def test_promo_trois_achetes_un_gratuit_refuse_quantite_negative():
         calculer_promo_trois_achetes_un_gratuit(
             Decimal("10.00"), -1
         )
+
+
+def test_reduction_totale_ne_depasse_pas_le_montant_eligible():
+    montant_eligible = Decimal("5.00")
+    reduction_promo10 = calculer_promo10(montant_eligible)
+    reduction_3_achetes_1_gratuit = Decimal("10.00")
+
+    reduction_totale = min(
+        reduction_promo10 + reduction_3_achetes_1_gratuit,
+        montant_eligible,
+    )
+
+    assert reduction_totale == Decimal("5.00")
+
+
+def test_plafonner_reduction_au_montant_eligible():
+    montant_eligible = Decimal("5.00")
+    reduction = Decimal("10.00")
+
+    assert plafonner_reduction(
+        reduction, montant_eligible
+    ) == Decimal("5.00")
+
+
+def test_plafonner_reduction_refuse_une_reduction_negative():
+    with pytest.raises(ValueError):
+        plafonner_reduction(
+            Decimal("-1.00"),
+            Decimal("10.00"),
+        )
+
+
+def test_plafonner_reduction_refuse_un_montant_eligible_negatif():
+    with pytest.raises(ValueError):
+        plafonner_reduction(
+            Decimal("1.00"),
+            Decimal("-10.00"),
+        )
+
+
+def test_plafonner_reduction_accepte_zero():
+    assert plafonner_reduction(
+        Decimal("0.00"),
+        Decimal("10.00"),
+    ) == Decimal("0.00")
+
+
+def test_plafonner_reduction_ne_depasse_pas_le_montant_eligible():
+    assert plafonner_reduction(
+        Decimal("3.00"),
+        Decimal("5.00"),
+    ) == Decimal("3.00")
+
+
+def test_plafonner_reduction_egale_au_montant_eligible():
+    assert plafonner_reduction(
+        Decimal("5.00"),
+        Decimal("5.00"),
+    ) == Decimal("5.00")

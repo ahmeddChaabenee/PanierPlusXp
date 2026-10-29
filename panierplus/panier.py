@@ -54,3 +54,22 @@ def calculer_promo_trois_achetes_un_gratuit(
         Decimal("0.01"),
         rounding=ROUND_HALF_UP,
     )
+
+
+
+def plafonner_reduction(
+    reduction: Decimal,
+    montant_eligible: Decimal,
+) -> Decimal:
+    """Limite la réduction au montant éligible."""
+    if reduction < Decimal("0.00"):
+        raise ValueError("La réduction doit être positive ou nulle.")
+    if montant_eligible < Decimal("0.00"):
+        raise ValueError("Le montant éligible doit être positif ou nul.")
+
+    reduction_plafonnee = min(reduction, montant_eligible)
+
+    return reduction_plafonnee.quantize(
+        Decimal("0.01"),
+        rounding=ROUND_HALF_UP,
+    )
