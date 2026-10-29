@@ -69,3 +69,30 @@ def test_refuser_article_introuvable():
 def test_refuser_article_sans_nom():
     with pytest.raises(ValueError):
         Article("", "LIVRE", 10.0, 1)
+
+
+def test_promo10_reduit_le_total_de_10_pourcent():
+    panier = Panier()
+    panier.ajouter(Article("Clavier", "STANDARD", 100.0, 1))
+
+    panier.appliquer_promotion("PROMO10")
+
+    assert panier.montant_reduction() == 10.0
+    assert panier.total_apres_reduction() == 90.0
+
+
+def test_code_promo_inconnu_ne_donne_pas_de_reduction():
+    panier = Panier()
+    panier.ajouter(Article("Clavier", "STANDARD", 100.0, 1))
+
+    panier.appliquer_promotion("INCONNU")
+
+    assert panier.montant_reduction() == 0.0
+    assert panier.total_apres_reduction() == 100.0
+
+
+def test_total_apres_reduction_ne_peut_pas_etre_negatif():
+    panier = Panier()
+    panier.appliquer_promotion("PROMO10")
+
+    assert panier.total_apres_reduction() == 0.0
