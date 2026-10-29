@@ -216,3 +216,42 @@ def test_total_ttc_coherent_avec_ht_et_tva_apres_offre():
     assert total_ht == 27.00
     assert tva == 5.40
     assert total_ttc == round(total_ht + tva, 2)
+
+
+
+def test_offre_sur_plusieurs_articles_a_prix_differents():
+    panier = Panier()
+    panier.ajouter(Article("A", "STANDARD", 5, 1, True))
+    panier.ajouter(Article("B", "STANDARD", 8, 1, True))
+    panier.ajouter(Article("C", "STANDARD", 12, 1, True))
+    panier.ajouter(Article("D", "STANDARD", 20, 1, True))
+
+    assert panier.sous_total() == 45.00
+    assert panier.montant_reduction_offre() == 5.00
+
+
+def test_tva_apres_offre_sur_plusieurs_articles():
+    panier = Panier()
+    panier.ajouter(Article("A", "STANDARD", 5, 1, True))
+    panier.ajouter(Article("B", "STANDARD", 8, 1, True))
+    panier.ajouter(Article("C", "STANDARD", 12, 1, True))
+    panier.ajouter(Article("D", "LIVRE", 20, 1, True))
+    panier.appliquer_promotion("PROMO10")
+
+    assert panier.sous_total() == 45.00
+    assert panier.montant_reduction_offre() == 5.00
+    assert panier.montant_reduction() == 4.00
+    assert panier.total_apres_reduction() == 36.00
+    assert panier.montant_tva() == 4.59
+    assert panier.total_ttc() == 40.59
+
+def test_tva_standard_apres_promotion():
+    panier = Panier()
+    panier.ajouter(Article("Produit test", "STANDARD", 100, 1))
+    panier.appliquer_promotion("PROMO10")
+
+    assert panier.sous_total() == 100.00
+    assert panier.total_apres_reduction() == 90.00
+
+    # Échec volontaire pour simuler la détection d'un défaut
+    assert panier.montant_tva() == 18.00
