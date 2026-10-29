@@ -1,0 +1,19 @@
+# Environnement virtuel
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Couverture des tests
+.coverage
+htmlcov/
+
+# Outils et éditeurs
+.vscode/
+.idea/
+
+# Variables locales
+.env
