@@ -73,3 +73,19 @@ def plafonner_reduction(
         Decimal("0.01"),
         rounding=ROUND_HALF_UP,
     )
+
+def calculer_promo10(
+    montant: Decimal,
+    categorie: str | None = None,
+) -> Decimal:
+    """Calcule une réduction de 10 %, sauf pour les livres."""
+    if montant < Decimal("0.00"):
+        raise ValueError("Le montant doit être positif ou nul.")
+
+    if categorie is not None and categorie.strip().lower() == "livre":
+        return Decimal("0.00")
+
+    return (montant * Decimal("0.10")).quantize(
+        Decimal("0.01"),
+        rounding=ROUND_HALF_UP,
+    )

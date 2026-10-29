@@ -7,7 +7,7 @@ from panierplus.panier import (
     calculer_promo_trois_achetes_un_gratuit,
     calculer_sous_total,
     calculer_ttc,
-    plafonner_reduction,
+    plafonner_reduction,calculer_promo10,
 )
 
 
@@ -183,3 +183,34 @@ def test_plafonner_reduction_egale_au_montant_eligible():
         Decimal("5.00"),
         Decimal("5.00"),
     ) == Decimal("5.00")
+
+
+def test_promo10_ne_s_applique_pas_aux_livres():
+    montant = Decimal("100.00")
+
+    assert calculer_promo10(
+        montant,
+        categorie="livre",
+    ) == Decimal("0.00")
+
+
+def test_promo10_s_applique_aux_produits_non_livres():
+    montant = Decimal("100.00")
+    assert calculer_promo10(
+        montant,
+        categorie="accessoire",
+    ) == Decimal("10.00")
+
+
+def test_promo10_exclut_les_livres_avec_espaces_et_majuscules():
+    montant = Decimal("100.00")
+    assert calculer_promo10(
+        montant,
+        categorie=" Livre ",
+    ) == Decimal("0.00")
+
+
+def test_promo10_sans_categorie_conserve_le_comportement_initial():
+    montant = Decimal("100.00")
+    assert calculer_promo10(montant) == Decimal("10.00")
+
