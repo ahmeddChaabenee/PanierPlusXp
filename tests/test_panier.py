@@ -2,7 +2,12 @@ from decimal import Decimal
 
 import pytest
 
-from panierplus.panier import calculer_promo10, calculer_sous_total, calculer_ttc
+from panierplus.panier import (
+    calculer_promo10,
+    calculer_promo_trois_achetes_un_gratuit,
+    calculer_sous_total,
+    calculer_ttc,
+)
 
 
 def test_module_panier_est_importable():
@@ -76,3 +81,45 @@ def test_calculer_ttc_arrondit_a_deux_decimales():
     montant_ht = Decimal("10.05")
 
     assert calculer_ttc(montant_ht) == Decimal("11.96")
+
+
+def test_promo_trois_achetes_un_gratuit():
+    prix_unitaire = Decimal("10.00")
+    quantite = 4
+
+    assert calculer_promo_trois_achetes_un_gratuit(
+        prix_unitaire, quantite
+    ) == Decimal("10.00")
+
+
+def test_promo_trois_achetes_un_gratuit_sans_quatrieme_article():
+    prix_unitaire = Decimal("10.00")
+    quantite = 3
+
+    assert calculer_promo_trois_achetes_un_gratuit(
+        prix_unitaire, quantite
+    ) == Decimal("0.00")
+
+
+def test_promo_trois_achetes_un_gratuit_pour_huit_articles():
+    prix_unitaire = Decimal("10.00")
+    quantite = 8
+
+    assert calculer_promo_trois_achetes_un_gratuit(
+        prix_unitaire, quantite
+    ) == Decimal("20.00")
+
+
+def test_promo_trois_achetes_un_gratuit_refuse_prix_negatif():
+    with pytest.raises(ValueError):
+        calculer_promo_trois_achetes_un_gratuit(
+            Decimal("-10.00"), 4
+        )
+
+
+
+def test_promo_trois_achetes_un_gratuit_refuse_quantite_negative():
+    with pytest.raises(ValueError):
+        calculer_promo_trois_achetes_un_gratuit(
+            Decimal("10.00"), -1
+        )

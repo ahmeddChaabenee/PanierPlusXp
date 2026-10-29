@@ -34,3 +34,23 @@ def calculer_ttc(montant_ht: Decimal) -> Decimal:
         Decimal("0.01"),
         rounding=ROUND_HALF_UP,
     )
+
+
+
+def calculer_promo_trois_achetes_un_gratuit(
+    prix_unitaire: Decimal,
+    quantite: int,
+) -> Decimal:
+    """Calcule la réduction pour chaque groupe de 4 articles : 1 gratuit."""
+    if prix_unitaire < Decimal("0.00"):
+        raise ValueError("Le prix unitaire doit être positif ou nul.")
+    if quantite < 0:
+        raise ValueError("La quantité doit être positive ou nulle.")
+
+    articles_gratuits = quantite // 4
+    reduction = prix_unitaire * articles_gratuits
+
+    return reduction.quantize(
+        Decimal("0.01"),
+        rounding=ROUND_HALF_UP,
+    )
