@@ -75,138 +75,118 @@ class Panier:
         """Apply a recognized promotion code."""
         self.code_promo = code if code == "PROMO10" else None
 
-    def montant_reduction_offre(self) -> float:
-        """Calculate the 3-for-1 discount on eligible products."""
-        prix_unites = []
+    def _unites_gratuites_par_article(self) -> dict[int, int]:
+        """Return the number of free offer units for each article."""
+        unites_eligibles = []
 
         for article in self.articles:
             if article.eligible_offre:
                 prix = montant(article.prix_unitaire)
-                prix_unites.extend([prix] * article.quantite)
+                unites_eligibles.extend(
+                    (prix, article) for _ in range(article.quantite)
+                )
 
-        # Group eligible units from most expensive to least expensive.
-        prix_unites.sort(reverse=True)
+        # Sort from most expensive to least expensive.
+        unites_eligibles.sort(key=lambda element: element[0], reverse=True)
 
-        reduction = ZERO
+        gratuites_par_article = {}
 
         # One free unit for every group of four eligible units.
-        # The cheapest unit in each group is free.
-        for index in range(3, len(prix_unites), 4):
-            reduction += prix_unites[index]
+        for index in range(3, len(unites_eligibles), 4):
+            _, article = unites_eligibles[index]
+            article_id = id(article)
+            gratuites_par_article[article_id] = (
+                gratuites_par_article.get(article_id, 0) + 1
+            )
+
+        return gratuites_par_article
+
+    def montant_reduction_offre(self) -> float:
+        """Calculate the 3-for-1 discount on eligible products."""
+        gratuites = self._unites_gratuites_par_article()
+
+        reduction = sum(
+            (
+                montant(article.prix_unitaire)
+                * gratuites.get(id(article), 0)
+                for article in self.articles
+            ),
+            ZERO,
+        )
 
         return float(montant(reduction))
 
     def montant_reduction(self) -> float:
-        """Calculate PROMO10 after the 3-for-1 offer."""
+        """Calculate PROMO10 after the offer, excluding books."""
         if self.code_promo != "PROMO10":
             return 0.0
 
-        sous_total = montant(self.sous_total())
-        reduction_offre = montant(self.montant_reduction_offre())
+        gratuites = self._unites_gratuites_par_article()
+        base_promo = ZERO
 
-        montant_restant = max(
-            sous_total - reduction_offre,
-            ZERO,
-        )
+        for article in self.articles:
+            if article.categorie.upper() != "STANDARD":
+                continue
 
-        reduction = montant(montant_restant * TAUX_PROMO)
+            quantite_gratuite = gratuites.get(id(article), 0)
+            quantite_payante = max(
+                article.quantite - quantite_gratuite,
+                0,
+            )
 
-        return float(min(reduction, montant_restant))
+            base_promo += (
+                montant(article.prix_unitaire) * quantite_payante
+            )
+
+        reduction = montant(base_promo * TAUX_PROMO)
+        return float(min(reduction, base_promo))
 
     def total_apres_reduction(self) -> float:
         """Return the non-negative total HT after all discounts."""
         sous_total = montant(self.sous_total())
-        reduction_offre = montant(self.montant_reduction_offre())
+        reduction_offre = min(
+            montant(self.montant_reduction_offre()),
+            sous_total,
+        )
 
-        reduction_offre = min(reduction_offre, sous_total)
         montant_restant = max(sous_total - reduction_offre, ZERO)
+        reduction_promo = montant(self.montant_reduction())
 
-        if self.code_promo == "PROMO10":
-            reduction_promo = montant(
-                montant_restant * TAUX_PROMO
-            )
-            reduction_promo = min(reduction_promo, montant_restant)
-        else:
-            reduction_promo = ZERO
-
+        reduction_promo = min(reduction_promo, montant_restant)
         total = montant_restant - reduction_promo
+
         return float(max(total, ZERO))
 
     def montant_tva(self) -> float:
-        """Calculate VAT on each product after applicable discounts."""
+        """Calculate VAT after the applicable discounts."""
         taux_tva = {
             "LIVRE": Decimal("0.055"),
             "STANDARD": Decimal("0.20"),
         }
 
-        # Calculate the offer discount per eligible product line.
-        unites_eligibles = []
-        for article in self.articles:
-            if article.eligible_offre:
-                for _ in range(article.quantite):
-                    unites_eligibles.append(
-                        (montant(article.prix_unitaire), article)
-                    )
-
-        # The lowest-priced unit in every group of four is free.
-        unites_eligibles.sort(
-            key=lambda element: element[0],
-            reverse=True,
-        )
-
-        unites_gratuites = set()
-        for index in range(3, len(unites_eligibles), 4):
-            unites_gratuites.add(index)
-
-        # Track free units by article identity and unit position.
-        gratuites_par_article = {}
-        for index in unites_gratuites:
-            prix, article = unites_eligibles[index]
-            gratuites_par_article.setdefault(id(article), []).append(prix)
-
-        # Allocate the offer discount across lines proportionally to
-        # the actual free units selected by the offer.
-        reductions_offre_par_article = {}
-        for prix, article in unites_eligibles:
-            reductions_offre_par_article.setdefault(id(article), [])
-
-        # Reconstruct the free-unit count for each article.
-        gratuites_par_article = {}
-        for index in range(3, len(unites_eligibles), 4):
-            _, article = unites_eligibles[index]
-            gratuites_par_article[id(article)] = (
-                gratuites_par_article.get(id(article), 0) + 1
-            )
-
+        gratuites = self._unites_gratuites_par_article()
         total_tva = ZERO
 
         for article in self.articles:
-            taux = taux_tva.get(article.categorie.upper())
+            categorie = article.categorie.upper()
+            taux = taux_tva.get(categorie)
+
             if taux is None:
-                raise ValueError(
-                    f"Catégorie inconnue : {article.categorie}"
-                )
+                raise ValueError(f"Catégorie inconnue : {article.categorie}")
 
-            montant_ligne = (
-                montant(article.prix_unitaire) * article.quantite
+            quantite_gratuite = gratuites.get(id(article), 0)
+            quantite_payante = max(
+                article.quantite - quantite_gratuite,
+                0,
             )
 
-            reduction_offre_ligne = (
-                montant(article.prix_unitaire)
-                * gratuites_par_article.get(id(article), 0)
+            montant_ligne = montant(
+                montant(article.prix_unitaire) * quantite_payante
             )
 
-            montant_ligne = max(
-                montant_ligne - reduction_offre_ligne,
-                ZERO,
-            )
-
-            # PROMO10 is applied after the offer to the remaining
-            # amount of the product line.
-            if self.code_promo == "PROMO10":
-                reduction_ligne = montant(
-                    montant_ligne * TAUX_PROMO
-                )
+            # PROMO10 applies only to STANDARD products.
+            if self.code_promo == "PROMO10" and categorie == "STANDARD":
+                reduction_ligne = montant(montant_ligne * TAUX_PROMO)
                 montant_ligne = max(
                     montant_ligne - reduction_ligne,
                     ZERO,

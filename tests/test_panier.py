@@ -1,4 +1,3 @@
-
 import pytest
 
 from panierplus.panier import Article, Panier, calculer_sous_total
@@ -97,6 +96,7 @@ def test_total_apres_reduction_ne_peut_pas_etre_negatif():
 
     assert panier.total_apres_reduction() == 0.0
 
+
 def test_tva_livre():
     panier = Panier()
     panier.ajouter(Article("Livre Python", "LIVRE", 100.00))
@@ -120,7 +120,6 @@ def test_tva_apres_promotion():
 
     assert panier.montant_tva() == 18.00
     assert panier.total_ttc() == 108.00
-
 
 
 def test_offre_3_pour_4_unites_eligibles():
@@ -176,6 +175,7 @@ def test_offre_moins_de_quatre_unites():
 
     assert panier.montant_reduction_offre() == 0.00
 
+
 def test_offre_appliquee_avant_promo10():
     panier = Panier()
     panier.ajouter(Article("A", "STANDARD", 10, 4, True))
@@ -218,7 +218,6 @@ def test_total_ttc_coherent_avec_ht_et_tva_apres_offre():
     assert total_ttc == round(total_ht + tva, 2)
 
 
-
 def test_offre_sur_plusieurs_articles_a_prix_differents():
     panier = Panier()
     panier.ajouter(Article("A", "STANDARD", 5, 1, True))
@@ -240,10 +239,11 @@ def test_tva_apres_offre_sur_plusieurs_articles():
 
     assert panier.sous_total() == 45.00
     assert panier.montant_reduction_offre() == 5.00
-    assert panier.montant_reduction() == 4.00
-    assert panier.total_apres_reduction() == 36.00
-    assert panier.montant_tva() == 4.59
-    assert panier.total_ttc() == 40.59
+    assert panier.montant_reduction() == 2.00
+    assert panier.total_apres_reduction() == 38.00
+    assert panier.montant_tva() == 4.70
+    assert panier.total_ttc() == 42.70
+
 
 def test_tva_standard_apres_promotion():
     panier = Panier()
@@ -252,6 +252,14 @@ def test_tva_standard_apres_promotion():
 
     assert panier.sous_total() == 100.00
     assert panier.total_apres_reduction() == 90.00
-
-    # Échec volontaire pour simuler la détection d'un défaut
     assert panier.montant_tva() == 18.00
+
+
+def test_promo10_ne_s_applique_pas_aux_livres():
+    panier = Panier()
+    panier.ajouter(Article("Roman", "LIVRE", 20, 1))
+    panier.appliquer_promotion("PROMO10")
+
+    assert panier.sous_total() == 20.00
+    assert panier.montant_reduction() == 0.00
+    assert panier.total_apres_reduction() == 20.00
